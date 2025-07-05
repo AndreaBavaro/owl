@@ -8,7 +8,8 @@ import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { LeadWithUI, getLeadById, updateLead, deleteLead } from '@/lib/supabase'
+import { getLeadById, updateLead, deleteLead } from '@/lib/supabase'
+import { Lead } from '@/lib/database.types'
 import { useToast } from '@/hooks/use-toast'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -16,7 +17,7 @@ export default function LeadDetailPage() {
   const params = useParams()
   const router = useRouter()
   const { toast } = useToast()
-  const [lead, setLead] = useState<LeadWithUI | null>(null)
+  const [lead, setLead] = useState<Lead | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState({
@@ -25,9 +26,6 @@ export default function LeadDetailPage() {
     email: '',
     phone: '',
     external_id: '',
-    loan_type: '',
-    loan_amount: 0,
-    notes: '',
     referral_name: '',
     source: '',
     status_code: 'new_lead',
@@ -56,9 +54,6 @@ export default function LeadDetailPage() {
           email: data.email || '',
           phone: data.phone || '',
           external_id: data.external_id || '',
-          loan_type: data.loan_type || '',
-          loan_amount: data.loan_amount || 0,
-          notes: data.notes || '',
           referral_name: data.referral_name || '',
           source: data.source || '',
           status_code: data.status_code || 'new_lead',
@@ -172,7 +167,7 @@ export default function LeadDetailPage() {
               </Button>
               <div>
                 <div className="flex items-center space-x-2">
-                  <h1 className="text-2xl font-bold text-gray-900">{lead.fullName || 'Unnamed Lead'}</h1>
+                  <h1 className="text-2xl font-bold text-gray-900">{`${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unnamed Lead'}</h1>
                   <Badge className={lead.status_code === 'new_lead' || lead.status_code === 'new' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}>
                     {lead.status_code === 'new_lead' || lead.status_code === 'new' ? 'New Lead' : 'Existing Client'}
                   </Badge>
@@ -305,10 +300,11 @@ export default function LeadDetailPage() {
               </CardHeader>
               <CardContent>
                 <Textarea
-                  value={formData.notes || ''}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  value={''}
+                  onChange={() => {}}
                   rows={6}
-                  placeholder="Add notes about this lead..."
+                  placeholder="Notes feature not available"
+                  disabled
                 />
               </CardContent>
             </Card>

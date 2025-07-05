@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { LeadWithUI, getLeads, isAuthenticated } from '@/lib/supabase'
+import { LeadWithUI, getLeads, isAuthenticated, subscribeToLeads, unsubscribeFromLeads } from '@/lib/supabase'
 import { 
   generateAnalyticsData, 
   getDateRanges, 
@@ -30,44 +30,60 @@ export default function AnalyticsPage() {
 
   const dateRanges = getDateRanges()
 
+  // Combined authentication and data loading effect with real-time subscriptions
   useEffect(() => {
     let isMounted = true
+    let subscription: any = null
     
-    const checkAuthAndLoadData = async () => {
+    const initializeAnalytics = async () => {
       try {
         setLoading(true)
+        
+        // Check authentication first
         const authenticated = await isAuthenticated()
+        if (!isMounted) return
         
         if (!authenticated) {
           router.push('/login')
           return
         }
         
-        if (isMounted) {
-          const data = await getLeads()
+        // Load and process data
+        await refreshData()
+        
+        // Set up real-time subscription for live analytics updates
+        subscription = subscribeToLeads((payload) => {
+          console.log('Analytics: Real-time update received:', payload)
           
-          if (isMounted) {
-            setLeads(data)
-            setLoading(false)
-          }
-        }
+          if (!isMounted) return
+          
+          // Refresh analytics data when leads change
+          refreshData()
+        })
+        
       } catch (error) {
-        console.error('Error in authentication or loading data:', error)
+        console.error('Analytics initialization error:', error)
         if (isMounted) {
           toast({
-            title: 'Error',
-            description: 'Failed to load analytics data',
-            variant: 'destructive',
+            title: "Error",
+            description: "Failed to load analytics data",
+            variant: "destructive",
           })
-          router.push('/login')
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false)
         }
       }
     }
     
-    checkAuthAndLoadData()
+    initializeAnalytics()
     
     return () => {
       isMounted = false
+      if (subscription) {
+        unsubscribeFromLeads(subscription)
+      }
     }
   }, [router, toast])
 

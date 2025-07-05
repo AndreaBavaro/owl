@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { 
-  LeadWithUI, 
+  Lead, 
   getLeads,
   isAuthenticated,
-  updateLeadStatus
+  updateLeadStatus,
+  subscribeToLeads,
+  unsubscribeFromLeads
 } from '@/lib/supabase'
 import { generateAnalyticsData } from '@/lib/analytics'
 import { useToast } from '@/hooks/use-toast'
@@ -51,14 +53,14 @@ import {
 } from 'lucide-react'
 
 export function LeadDashboard() {
-  const [leads, setLeads] = useState<LeadWithUI[]>([])
-  const [filteredLeads, setFilteredLeads] = useState<LeadWithUI[]>([])
+  const [leads, setLeads] = useState<Lead[]>([])
+  const [filteredLeads, setFilteredLeads] = useState<Lead[]>([])
   const [loading, setLoading] = useState(true)
   const [authChecked, setAuthChecked] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<string | null>(null)
   const [sortConfig, setSortConfig] = useState<{
-    key: keyof LeadWithUI | null;
+    key: keyof Lead | null;
     direction: 'asc' | 'desc';
   }>({ key: 'created_at', direction: 'desc' })
   const [analyticsData, setAnalyticsData] = useState({
@@ -70,52 +72,89 @@ export function LeadDashboard() {
   const router = useRouter()
   const { toast } = useToast()
 
-  // Combined authentication check and data loading
+  // Combined authentication and data loading effect with real-time subscriptions
   useEffect(() => {
     let isMounted = true
+    let subscription: any = null
     
-    const checkAuthAndLoadData = async () => {
+    const initializeDashboard = async () => {
       try {
         setLoading(true)
+        
+        // Check authentication first
+        console.log('Dashboard: Starting authentication check...');
         const authenticated = await isAuthenticated()
+        console.log('Dashboard: Authentication result:', authenticated);
+        if (!isMounted) return
         
         if (!authenticated) {
+          console.log('Dashboard: Not authenticated, redirecting to login');
           router.push('/login')
           return
         }
         
-        if (isMounted) {
-          setAuthChecked(true)
-          const data = await getLeads()
+        // Set auth as checked since we're authenticated
+        setAuthChecked(true)
+        
+        // Load leads data
+        await refreshLeads()
+        
+        // Set up real-time subscription
+        subscription = subscribeToLeads((payload) => {
+          console.log('Real-time update received:', payload)
           
-          if (isMounted) {
-            setLeads(data)
-            const analytics = generateAnalyticsData(data)
-            setAnalyticsData({
-              totalLeadsThisMonth: analytics.totalLeadsThisMonth,
-              topSource: analytics.topSource,
-              mostRequestedService: analytics.mostRequestedService,
+          if (!isMounted) return
+          
+          // Handle different types of changes
+          if (payload.eventType === 'INSERT') {
+            // Add new lead to the list
+            setLeads(prevLeads => [payload.new, ...prevLeads])
+            toast({
+              title: "New Lead",
+              description: `${payload.new.first_name} ${payload.new.last_name} has been added`,
             })
-            setLoading(false)
+          } else if (payload.eventType === 'UPDATE') {
+            // Update existing lead
+            setLeads(prevLeads => 
+              prevLeads.map(lead => 
+                lead.lead_id === payload.new.lead_id ? payload.new : lead
+              )
+            )
+          } else if (payload.eventType === 'DELETE') {
+            // Remove deleted lead
+            setLeads(prevLeads => 
+              prevLeads.filter(lead => lead.lead_id !== payload.old.lead_id)
+            )
+            toast({
+              title: "Lead Removed",
+              description: "A lead has been deleted",
+            })
           }
-        }
+        })
+        
       } catch (error) {
-        console.error('Error in authentication or loading data:', error)
+        console.error('Dashboard initialization error:', error)
         if (isMounted) {
           toast({
-            title: 'Error',
-            description: 'Failed to load dashboard data',
-            variant: 'destructive',
+            title: "Error",
+            description: "Failed to load dashboard data",
+            variant: "destructive",
           })
+        }
+      } finally {
+        if (isMounted) {
           setLoading(false)
         }
       }
     }
     
-    checkAuthAndLoadData()
+    initializeDashboard()
     
     return () => {
       isMounted = false
+      if (subscription) {
+        unsubscribeFromLeads(subscription)
+      }
     }
   }, [router, toast])
 
@@ -127,7 +166,7 @@ export function LeadDashboard() {
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       result = result.filter(lead => 
-        (lead.fullName?.toLowerCase().includes(query) || false) ||
+        ((lead.first_name && lead.last_name ? `${lead.first_name} ${lead.last_name}` : lead.first_name || lead.last_name || '')?.toLowerCase().includes(query) || false) ||
         (lead.first_name?.toLowerCase().includes(query) || false) ||
         (lead.last_name?.toLowerCase().includes(query) || false) ||
         (lead.email?.toLowerCase().includes(query) || false) ||
@@ -150,8 +189,8 @@ export function LeadDashboard() {
     // Apply sorting
     if (sortConfig.key) {
       result.sort((a, b) => {
-        const aValue = a[sortConfig.key as keyof LeadWithUI]
-        const bValue = b[sortConfig.key as keyof LeadWithUI]
+        const aValue = a[sortConfig.key as keyof Lead]
+        const bValue = b[sortConfig.key as keyof Lead]
         
         if (aValue === null || aValue === undefined) return sortConfig.direction === 'asc' ? -1 : 1
         if (bValue === null || bValue === undefined) return sortConfig.direction === 'asc' ? 1 : -1
@@ -199,7 +238,7 @@ export function LeadDashboard() {
     }
   }
 
-  const handleSort = (key: keyof LeadWithUI) => {
+  const handleSort = (key: keyof Lead) => {
     setSortConfig(current => ({
       key,
       direction: current.key === key && current.direction === 'asc' ? 'desc' : 'asc'
@@ -221,15 +260,11 @@ export function LeadDashboard() {
         )
       )
       
-      const success = await updateLeadStatus(leadId, newStatus)
-      if (success) {
-        toast({
-          title: 'Status Updated',
-          description: `Lead status changed to ${newStatus === 'new_lead' ? 'New Lead' : 'Existing Client'}`,
-        })
-      } else {
-        throw new Error('Failed to update status')
-      }
+      await updateLeadStatus(leadId, newStatus)
+      toast({
+        title: 'Status Updated',
+        description: `Lead status changed to ${newStatus === 'new_lead' ? 'New Lead' : 'Existing Client'}`,
+      })
     } catch (error) {
       // Revert on error
       refreshLeads() // Reload all leads to ensure consistency
@@ -264,7 +299,7 @@ export function LeadDashboard() {
     )
   }
 
-  if (loading) {
+  if (loading || !authChecked) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -402,7 +437,7 @@ export function LeadDashboard() {
                   <TableRow key={lead.lead_id}>
                     <TableCell className="font-medium">
                       <Link href={`/lead/${lead.lead_id}`} className="hover:text-primary">
-                        {lead.fullName || 'Unnamed Lead'}
+                        {(lead.first_name && lead.last_name ? `${lead.first_name} ${lead.last_name}` : lead.first_name || lead.last_name || 'Unnamed Lead')}
                       </Link>
                     </TableCell>
                     <TableCell>

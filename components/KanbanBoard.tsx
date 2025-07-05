@@ -127,72 +127,61 @@ export function KanbanBoard() {
     const { active, over } = event
     setActiveId(null)
 
-    if (!over) return
+    const onDragEnd = async ({ active, over }: DragEndEvent) => {
+      if (!over) return;
 
-    const leadId = Number(active.id)
-    const newStatusCode = over.id as string
-    
-    // Find the lead being moved
-    const lead = leads.find(l => l.lead_id === leadId)
-    if (!lead || lead.status_code === newStatusCode) return
+      const activeId = active.id.toString();
+      const overId = over.id.toString();
 
-    const oldStatusCode = lead.status_code || ''
+      if (activeId !== overId) {
+        const lead = leads.find(l => l.lead_id.toString() === activeId);
+        const newStatus = overId;
 
-    // Optimistic update
-    setLeads(prev => 
-      prev.map(l => 
-        l.lead_id === leadId 
-          ? { ...l, status_code: newStatusCode }
-          : l
-      )
-    )
+        if (lead && lead.status_code !== newStatus) {
+          const oldStatus = lead.status_code;
 
-    // Update counts optimistically
-    setLeadCounts(prev => ({
-      ...prev,
-      [oldStatusCode]: (prev[oldStatusCode] || 0) - 1,
-      [newStatusCode]: (prev[newStatusCode] || 0) + 1,
-    }))
+          // Optimistic UI update
+          setLeads(prevLeads => {
+            const newLeads = prevLeads.map(l =>
+              l.lead_id.toString() === activeId ? { ...l, status_code: newStatus } : l
+            );
+            return newLeads;
+          });
 
-    try {
-      const success = await updateLeadStatus(leadId, newStatusCode)
-      if (success) {
-        const statusName = statuses.find(s => s.status_code === newStatusCode)?.description || newStatusCode
-        toast({
-          title: 'Status Updated',
-          description: `Lead moved to ${statusName}`,
-        })
-      } else {
-        throw new Error('Failed to update status')
+          try {
+            const result = await updateLeadStatus(lead.lead_id, newStatus);
+            if (!result || result.error) {
+              throw new Error(result?.error?.message || 'Failed to update lead status');
+            }
+            toast({
+              title: 'Lead Updated',
+              description: `Moved lead to ${newStatus}`,
+            });
+          } catch (error) {
+            // Revert on failure
+            setLeads(prevLeads => {
+              return prevLeads.map(l =>
+                l.lead_id.toString() === activeId ? { ...l, status_code: oldStatus } : l
+              );
+            });
+            toast({
+              title: 'Update Failed',
+              description: error instanceof Error ? error.message : 'Could not update lead status.',
+              variant: 'destructive',
+            });
+          }
+        }
       }
-    } catch (error) {
-      // Revert optimistic update on error
-      setLeads(prev => 
-        prev.map(l => 
-          l.lead_id === leadId 
-            ? { ...l, status_code: oldStatusCode }
-            : l
-        )
-      )
-      setLeadCounts(prev => ({
-        ...prev,
-        [oldStatusCode]: (prev[oldStatusCode] || 0) + 1,
-        [newStatusCode]: (prev[newStatusCode] || 0) - 1,
-      }))
-      
-      toast({
-        title: 'Error',
-        description: 'Failed to update lead status',
-        variant: 'destructive',
-      })
-    }
+    };
+
+    onDragEnd({ active, over });
   }
 
-  const getLeadsByStatus = (statusCode: string) => {
-    return leads.filter(lead => lead.status_code === statusCode)
-  }
+  const getLeadsForStatus = (statusCode: string) => {
+    return leads.filter(lead => lead.status_code === statusCode);
+  };
 
-  const activeLead = activeId ? leads.find(lead => lead.lead_id === activeId) : null
+  const activeLead = activeId ? leads.find(lead => lead.lead_id.toString() === activeId.toString()) : null;
 
   if (!authChecked) {
     return (

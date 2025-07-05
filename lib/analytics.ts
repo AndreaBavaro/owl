@@ -1,4 +1,4 @@
-import { LeadWithUI } from './supabase'
+import { Lead } from './supabase'
 
 export interface AnalyticsData {
   totalLeads: number
@@ -51,14 +51,14 @@ export const getDateRanges = (): { [key: string]: DateRange } => {
   return ranges
 }
 
-export const filterLeadsByDateRange = (leads: LeadWithUI[], dateRange: DateRange): LeadWithUI[] => {
+export const filterLeadsByDateRange = (leads: Lead[], dateRange: DateRange): Lead[] => {
   return leads.filter(lead => {
     const leadDate = new Date(lead.created_at)
     return leadDate >= dateRange.start && leadDate <= dateRange.end
   })
 }
 
-export const calculateSourceDistribution = (leads: LeadWithUI[]): { source: string; count: number; percentage: number }[] => {
+export const calculateSourceDistribution = (leads: Lead[]): { source: string; count: number; percentage: number }[] => {
   const sourceCount: { [key: string]: number } = {}
   const totalLeads = leads.length
 
@@ -76,7 +76,7 @@ export const calculateSourceDistribution = (leads: LeadWithUI[]): { source: stri
     .sort((a, b) => b.count - a.count)
 }
 
-export const calculateServiceDistribution = (leads: LeadWithUI[]): { service: string; count: number; percentage: number }[] => {
+export const calculateServiceDistribution = (leads: Lead[]): { service: string; count: number; percentage: number }[] => {
   const serviceCount: { [key: string]: number } = {}
   const totalLeads = leads.length
 
@@ -94,7 +94,7 @@ export const calculateServiceDistribution = (leads: LeadWithUI[]): { service: st
     .sort((a, b) => b.count - a.count)
 }
 
-export const calculateConversionFunnel = (leads: LeadWithUI[]): { status: string; count: number; percentage: number }[] => {
+export const calculateConversionFunnel = (leads: Lead[]): { status: string; count: number; percentage: number }[] => {
   const statusCount: { [key: string]: number } = {}
   const totalLeads = leads.length
 
@@ -117,7 +117,7 @@ export const calculateConversionFunnel = (leads: LeadWithUI[]): { status: string
     }))
 }
 
-export const calculateMonthlyTrends = (leads: LeadWithUI[], months: number = 12): { month: string; leads: number; conversions: number }[] => {
+export const calculateMonthlyTrends = (leads: Lead[], months: number = 12): { month: string; leads: number; conversions: number }[] => {
   const now = new Date()
   const monthlyData: { [key: string]: { leads: number; conversions: number } } = {}
 
@@ -149,7 +149,7 @@ export const calculateMonthlyTrends = (leads: LeadWithUI[], months: number = 12)
     .sort((a, b) => a.month.localeCompare(b.month))
 }
 
-export const calculateSourcePerformance = (leads: LeadWithUI[]): { source: string; leads: number; conversions: number; rate: number }[] => {
+export const calculateSourcePerformance = (leads: Lead[]): { source: string; leads: number; conversions: number; rate: number }[] => {
   const sourceData: { [key: string]: { leads: number; conversions: number } } = {}
 
   leads.forEach(lead => {
@@ -173,7 +173,7 @@ export const calculateSourcePerformance = (leads: LeadWithUI[]): { source: strin
     .sort((a, b) => b.leads - a.leads)
 }
 
-export const calculateServicePerformance = (leads: LeadWithUI[]): { service: string; leads: number; monthlyTrend: number }[] => {
+export const calculateServicePerformance = (leads: Lead[]): { service: string; leads: number; monthlyTrend: number }[] => {
   const now = new Date()
   const currentMonth = now.getMonth()
   const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1
@@ -210,7 +210,7 @@ export const calculateServicePerformance = (leads: LeadWithUI[]): { service: str
     .sort((a, b) => b.leads - a.leads)
 }
 
-export const generateAnalyticsData = (leads: LeadWithUI[], dateRange?: DateRange): AnalyticsData => {
+export const generateAnalyticsData = (leads: Lead[], dateRange?: DateRange): AnalyticsData => {
   const filteredLeads = dateRange ? filterLeadsByDateRange(leads, dateRange) : leads
   
   // Calculate this month's leads

@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { signInWithEmail, signInWithProvider, isAuthenticated, AuthProvider } from '@/lib/supabase'
+import { signInWithPassword, signInWithProvider, isAuthenticated, AuthProvider } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useToast } from '@/hooks/use-toast'
-import { Github, Mail, Facebook } from 'lucide-react'
+import { Github, Mail } from 'lucide-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
-  const [magicLinkSent, setMagicLinkSent] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
 
@@ -27,33 +27,24 @@ export default function LoginPage() {
     checkAuth()
   }, [router])
 
-  const handleEmailSignIn = async (e: React.FormEvent) => {
+  const handlePasswordSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!email || !email.includes('@')) {
-      toast({
-        title: 'Invalid email',
-        description: 'Please enter a valid email address',
-        variant: 'destructive',
-      })
-      return
-    }
-
     setLoading(true)
     try {
-      const { success, error } = await signInWithEmail(email)
+      const { success, error } = await signInWithPassword(email, password)
       if (success) {
-        setMagicLinkSent(true)
+        router.push('/dashboard')
         toast({
-          title: 'Magic link sent',
-          description: 'Check your email for the login link',
+          title: 'Signed in successfully',
+          description: 'Welcome back!',
         })
       } else {
-        throw new Error(error || 'Failed to send magic link')
+        throw new Error(error || 'Failed to sign in')
       }
     } catch (error) {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to send magic link',
+        description: error instanceof Error ? error.message : 'Failed to sign in',
         variant: 'destructive',
       })
     } finally {
@@ -96,27 +87,8 @@ export default function LoginPage() {
         </div>
         
         <div className="bg-white py-8 px-6 shadow rounded-lg space-y-6">
-          {magicLinkSent ? (
-            <div className="text-center space-y-4">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
-                <Mail className="h-6 w-6 text-green-600" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900">Check your email</h3>
-              <p className="text-sm text-gray-500">
-                We've sent a magic link to <span className="font-medium">{email}</span>.
-                Click the link in the email to sign in.
-              </p>
-              <Button 
-                variant="outline" 
-                className="mt-4" 
-                onClick={() => setMagicLinkSent(false)}
-              >
-                Back to sign in
-              </Button>
-            </div>
-          ) : (
             <>
-              <form onSubmit={handleEmailSignIn} className="space-y-4">
+              <form onSubmit={handlePasswordSignIn} className="space-y-4">
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                     Email address
@@ -136,13 +108,31 @@ export default function LoginPage() {
                   </div>
                 </div>
 
+                <div>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                    Password
+                  </label>
+                  <div className="mt-1">
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      autoComplete="current-password"
+                      required
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      disabled={loading}
+                    />
+                  </div>
+                </div>
+
                 <Button 
                   type="submit" 
                   className="w-full flex items-center justify-center gap-2" 
                   disabled={loading}
                 >
-                  <Mail className="h-4 w-4" />
-                  {loading ? 'Sending...' : 'Send Magic Link'}
+                  {loading ? 'Signing in...' : 'Sign In'}
                 </Button>
               </form>
 
@@ -194,7 +184,6 @@ export default function LoginPage() {
                 </Button>
               </div>
             </>
-          )}
         </div>
       </div>
     </div>
