@@ -4,31 +4,39 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 export default function DebugPage() {
-  const [debugInfo, setDebugInfo] = useState<any>({})
+  const [debugInfo, setDebugInfo] = useState<any>({
+    sessionCheck: null,
+  })
 
   useEffect(() => {
     const checkEnvironment = async () => {
-      const info = {
+      const info: any = {
         supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL ? 'Set' : 'Missing',
-        supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? 'Set' : 'Missing',
+        supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+          ? 'Set'
+          : 'Missing',
         supabaseClient: !!supabase,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        sessionCheck: null,
       }
 
       // Try to get session
       try {
-        const { data: { session }, error } = await supabase.auth.getSession()
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession()
         info.sessionCheck = {
           success: !error,
           hasSession: !!session,
           hasUser: !!session?.user,
           userEmail: session?.user?.email,
-          error: error?.message
+          error: error?.message,
         }
       } catch (err) {
         info.sessionCheck = {
           success: false,
-          error: err instanceof Error ? err.message : 'Unknown error'
+          error: err instanceof Error ? err.message : 'Unknown error',
         }
       }
 
