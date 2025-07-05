@@ -12,18 +12,22 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { LeadWithUI } from '@/lib/supabase'
-import { formatPhoneNumber, getSourceBadgeClass, getPriorityColor } from '@/lib/utils'
+import { Lead } from '@/lib/supabase'
+import {
+  formatPhoneNumber,
+  getSourceBadgeClass,
+  getPriorityColor,
+} from '@/lib/utils'
 import Link from 'next/link'
 
 interface LeadCardProps {
-  lead: LeadWithUI
+  lead: Lead
   onArchive?: (id: number) => void
 }
 
 export function LeadCard({ lead, onArchive }: LeadCardProps) {
   const [isHovered, setIsHovered] = useState(false)
-  
+
   const {
     attributes,
     listeners,
@@ -72,25 +76,25 @@ export function LeadCard({ lead, onArchive }: LeadCardProps) {
       {/* Source Badge */}
       {lead.source && (
         <div className="absolute top-2 right-2">
-          <Badge className={`text-xs px-2 py-1 ${getSourceBadgeClass(lead.source)}`}>
+          <Badge
+            className={`text-xs px-2 py-1 ${getSourceBadgeClass(lead.source)}`}
+          >
             {lead.source}
           </Badge>
         </div>
       )}
 
-      {/* Priority Indicator */}
-      {lead.priority && (
-        <div className={`absolute top-2 left-2 w-2 h-2 rounded-full ${getPriorityColor(lead.priority).split(' ')[0].replace('text-', 'bg-')}`} />
-      )}
+      {/* Priority Indicator - removed as not in Lead schema */}
 
       {/* Lead Info */}
       <div className="mt-2">
         <Link href={`/lead/${lead.lead_id}`} className="block">
           <h3 className="font-semibold text-gray-900 text-base truncate hover:text-primary">
-            {lead.full_name || 'Unnamed Lead'}
+            {`${lead.first_name || ''} ${lead.last_name || ''}`.trim() ||
+              'Unnamed Lead'}
           </h3>
         </Link>
-        
+
         <div className="mt-1 space-y-1">
           {lead.phone && (
             <p className="text-xs text-gray-600 truncate">
@@ -98,9 +102,7 @@ export function LeadCard({ lead, onArchive }: LeadCardProps) {
             </p>
           )}
           {lead.email && (
-            <p className="text-xs text-gray-600 truncate">
-              {lead.email}
-            </p>
+            <p className="text-xs text-gray-600 truncate">{lead.email}</p>
           )}
           {lead.referral_name && (
             <p className="text-xs text-gray-600 truncate">

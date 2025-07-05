@@ -11,20 +11,17 @@ import {
   useSensors,
   closestCorners,
 } from '@dnd-kit/core'
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Badge } from '@/components/ui/badge'
 import { LeadCard } from '@/components/LeadCard'
-import { 
-  LeadWithUI, 
+import {
+  Lead,
   Status,
-  getLeads, 
-  updateLeadStatus, 
+  getLeads,
+  updateLeadStatus,
   getLeadCounts,
   getStatuses,
-  isAuthenticated
+  isAuthenticated,
 } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { useRouter } from 'next/navigation'
@@ -40,7 +37,7 @@ const DEFAULT_COLORS = [
 ]
 
 export function KanbanBoard() {
-  const [leads, setLeads] = useState<LeadWithUI[]>([])
+  const [leads, setLeads] = useState<Lead[]>([])
   const [statuses, setStatuses] = useState<Status[]>([])
   const [leadCounts, setLeadCounts] = useState<Record<string, number>>({})
   const [activeId, setActiveId] = useState<number | null>(null)
@@ -67,10 +64,10 @@ export function KanbanBoard() {
         setAuthChecked(true)
       }
     }
-    
+
     checkAuth()
   }, [])
-  
+
   // Load data after authentication is confirmed
   useEffect(() => {
     if (authChecked) {
@@ -79,7 +76,7 @@ export function KanbanBoard() {
       loadLeadCounts()
     }
   }, [authChecked])
-  
+
   const loadStatuses = async () => {
     try {
       const data = await getStatuses()
@@ -128,60 +125,71 @@ export function KanbanBoard() {
     setActiveId(null)
 
     const onDragEnd = async ({ active, over }: DragEndEvent) => {
-      if (!over) return;
+      if (!over) return
 
-      const activeId = active.id.toString();
-      const overId = over.id.toString();
+      const activeId = active.id.toString()
+      const overId = over.id.toString()
 
       if (activeId !== overId) {
-        const lead = leads.find(l => l.lead_id.toString() === activeId);
-        const newStatus = overId;
+        const lead = leads.find((l) => l.lead_id.toString() === activeId)
+        const newStatus = overId
 
         if (lead && lead.status_code !== newStatus) {
-          const oldStatus = lead.status_code;
+          const oldStatus = lead.status_code
 
           // Optimistic UI update
-          setLeads(prevLeads => {
-            const newLeads = prevLeads.map(l =>
-              l.lead_id.toString() === activeId ? { ...l, status_code: newStatus } : l
-            );
-            return newLeads;
-          });
+          setLeads((prevLeads) => {
+            const newLeads = prevLeads.map((l) =>
+              l.lead_id.toString() === activeId
+                ? { ...l, status_code: newStatus }
+                : l
+            )
+            return newLeads
+          })
 
           try {
-            const result = await updateLeadStatus(lead.lead_id, newStatus);
+            const result = await updateLeadStatus(lead.lead_id, newStatus)
             if (!result || result.error) {
-              throw new Error(result?.error?.message || 'Failed to update lead status');
+              throw new Error(
+                result?.error?.message || 'Failed to update lead status'
+              )
             }
             toast({
               title: 'Lead Updated',
               description: `Moved lead to ${newStatus}`,
-            });
+            })
           } catch (error) {
             // Revert on failure
-            setLeads(prevLeads => {
-              return prevLeads.map(l =>
-                l.lead_id.toString() === activeId ? { ...l, status_code: oldStatus } : l
-              );
-            });
+            setLeads((prevLeads) => {
+              return prevLeads.map((l) =>
+                l.lead_id.toString() === activeId
+                  ? { ...l, status_code: oldStatus }
+                  : l
+              )
+            })
             toast({
               title: 'Update Failed',
-              description: error instanceof Error ? error.message : 'Could not update lead status.',
+              description:
+                error instanceof Error
+                  ? error.message
+                  : 'Could not update lead status.',
               variant: 'destructive',
-            });
+            })
           }
         }
       }
-    };
+    }
 
-    onDragEnd({ active, over });
+    onDragEnd({ active, over })
   }
 
   const getLeadsForStatus = (statusCode: string) => {
-    return leads.filter(lead => lead.status_code === statusCode);
-  };
+    return leads.filter((lead) => lead.status_code === statusCode)
+  }
 
-  const activeLead = activeId ? leads.find(lead => lead.lead_id.toString() === activeId.toString()) : null;
+  const activeLead = activeId
+    ? leads.find((lead) => lead.lead_id.toString() === activeId.toString())
+    : null
 
   if (!authChecked) {
     return (
@@ -205,8 +213,12 @@ export function KanbanBoard() {
   if (statuses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64">
-        <div className="text-xl font-semibold mb-2">No status columns found</div>
-        <p className="text-gray-500">Please configure status columns in your Supabase database</p>
+        <div className="text-xl font-semibold mb-2">
+          No status columns found
+        </div>
+        <p className="text-gray-500">
+          Please configure status columns in your Supabase database
+        </p>
       </div>
     )
   }
@@ -222,7 +234,7 @@ export function KanbanBoard() {
         {statuses.map((status, index) => {
           const columnLeads = getLeadsByStatus(status.status_code)
           const colorIndex = index % DEFAULT_COLORS.length
-          
+
           return (
             <div
               key={status.status_code}
@@ -230,7 +242,9 @@ export function KanbanBoard() {
             >
               {/* Column Header */}
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-gray-900">{status.description || status.status_code}</h3>
+                <h3 className="font-semibold text-gray-900">
+                  {status.description || status.status_code}
+                </h3>
                 <Badge variant="secondary" className="ml-2">
                   {leadCounts[status.status_code] || 0}
                 </Badge>
@@ -238,7 +252,7 @@ export function KanbanBoard() {
 
               {/* Column Content */}
               <SortableContext
-                items={columnLeads.map(lead => lead.lead_id.toString())}
+                items={columnLeads.map((lead) => lead.lead_id.toString())}
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-3 min-h-[200px]">
