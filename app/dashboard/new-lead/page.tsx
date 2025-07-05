@@ -6,18 +6,23 @@ import { ArrowLeft, Save } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { createLead } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
-import { generateUuid } from '@/lib/uuid-utils'
 
 export default function NewLeadPage() {
   const router = useRouter()
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
   // Generate a UUID for display purposes only
-  const [leadUuid] = useState(generateUuid())
-  
+  const [leadUuid] = useState(() => crypto.randomUUID())
+
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -30,7 +35,7 @@ export default function NewLeadPage() {
     source: '',
     status_code: 'new_lead',
     external_id: null,
-    service: ''
+    service: '',
   })
 
   const handleSave = async () => {
@@ -72,9 +77,7 @@ export default function NewLeadPage() {
               </Button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">New Lead</h1>
-                <p className="text-sm text-gray-500">
-                  UUID: {leadUuid}
-                </p>
+                <p className="text-sm text-gray-500">UUID: {leadUuid}</p>
               </div>
             </div>
             <Button onClick={handleSave} disabled={saving}>
@@ -98,7 +101,9 @@ export default function NewLeadPage() {
                 </label>
                 <Input
                   value={formData.first_name}
-                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, first_name: e.target.value })
+                  }
                 />
               </div>
               <div>
@@ -107,7 +112,9 @@ export default function NewLeadPage() {
                 </label>
                 <Input
                   value={formData.last_name}
-                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, last_name: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -118,7 +125,9 @@ export default function NewLeadPage() {
               <Input
                 type="email"
                 value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
               />
             </div>
             <div>
@@ -127,7 +136,9 @@ export default function NewLeadPage() {
               </label>
               <Input
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
               />
             </div>
             <div>
@@ -136,15 +147,21 @@ export default function NewLeadPage() {
               </label>
               <Select
                 value={formData.service}
-                onValueChange={(value) => setFormData({ ...formData, service: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, service: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select service" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="First Time Buying">First Time Buying</SelectItem>
+                  <SelectItem value="First Time Buying">
+                    First Time Buying
+                  </SelectItem>
                   <SelectItem value="Refinancing">Refinancing</SelectItem>
-                  <SelectItem value="Reverse Mortgage">Reverse Mortgage</SelectItem>
+                  <SelectItem value="Reverse Mortgage">
+                    Reverse Mortgage
+                  </SelectItem>
                   <SelectItem value="Other">Other</SelectItem>
                 </SelectContent>
               </Select>
@@ -155,7 +172,9 @@ export default function NewLeadPage() {
               </label>
               <Input
                 value={formData.loan_type}
-                onChange={(e) => setFormData({ ...formData, loan_type: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, loan_type: e.target.value })
+                }
               />
             </div>
             <div>
@@ -165,7 +184,12 @@ export default function NewLeadPage() {
               <Input
                 type="number"
                 value={formData.loan_amount}
-                onChange={(e) => setFormData({ ...formData, loan_amount: parseInt(e.target.value) || 0 })}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    loan_amount: parseInt(e.target.value) || 0,
+                  })
+                }
               />
             </div>
             <div>
@@ -174,7 +198,9 @@ export default function NewLeadPage() {
               </label>
               <Input
                 value={formData.referral_name}
-                onChange={(e) => setFormData({ ...formData, referral_name: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, referral_name: e.target.value })
+                }
               />
             </div>
             <div>
@@ -183,7 +209,9 @@ export default function NewLeadPage() {
               </label>
               <Input
                 value={formData.source}
-                onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, source: e.target.value })
+                }
               />
             </div>
             <div>
@@ -192,14 +220,18 @@ export default function NewLeadPage() {
               </label>
               <Select
                 value={formData.status_code}
-                onValueChange={(value) => setFormData({ ...formData, status_code: value })}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, status_code: value })
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="new_lead">New Lead</SelectItem>
-                  <SelectItem value="existing_client">Existing Client</SelectItem>
+                  <SelectItem value="existing_client">
+                    Existing Client
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -209,7 +241,9 @@ export default function NewLeadPage() {
               </label>
               <Textarea
                 value={formData.notes || ''}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                onChange={(e) =>
+                  setFormData({ ...formData, notes: e.target.value })
+                }
                 rows={4}
               />
             </div>
