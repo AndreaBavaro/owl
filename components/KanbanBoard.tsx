@@ -124,63 +124,59 @@ export function KanbanBoard() {
     const { active, over } = event
     setActiveId(null)
 
-    const onDragEnd = async ({ active, over }: DragEndEvent) => {
-      if (!over) return
+    if (!over) return
 
-      const activeId = active.id.toString()
-      const overId = over.id.toString()
+    const activeId = active.id.toString()
+    const overId = over.id.toString()
 
-      if (activeId !== overId) {
-        const lead = leads.find((l) => l.lead_id.toString() === activeId)
-        const newStatus = overId
+    if (activeId !== overId) {
+      const lead = leads.find((l: Lead) => l.lead_id.toString() === activeId)
+      const newStatus = overId
 
-        if (lead && lead.status_code !== newStatus) {
-          const oldStatus = lead.status_code
+      if (lead && lead.status_code !== newStatus) {
+        const oldStatus = lead.status_code
 
-          // Optimistic UI update
+        // Optimistic UI update
+        setLeads((prevLeads) => {
+          const newLeads = prevLeads.map((l: Lead) =>
+            l.lead_id.toString() === activeId
+              ? { ...l, status_code: newStatus }
+              : l
+          )
+          return newLeads
+        })
+
+        try {
+          const result = await updateLeadStatus(lead.lead_id, newStatus)
+          if (!result || result.error) {
+            throw new Error(
+              result?.error?.message || 'Failed to update lead status'
+            )
+          }
+          toast({
+            title: 'Lead Updated',
+            description: `Moved lead to ${newStatus}`,
+          })
+        } catch (error) {
+          // Revert on failure
           setLeads((prevLeads) => {
-            const newLeads = prevLeads.map((l) =>
+            return prevLeads.map((l: Lead) =>
               l.lead_id.toString() === activeId
-                ? { ...l, status_code: newStatus }
+                ? { ...l, status_code: oldStatus }
                 : l
             )
-            return newLeads
           })
-
-          try {
-            const result = await updateLeadStatus(lead.lead_id, newStatus)
-            if (!result || result.error) {
-              throw new Error(
-                result?.error?.message || 'Failed to update lead status'
-              )
-            }
-            toast({
-              title: 'Lead Updated',
-              description: `Moved lead to ${newStatus}`,
-            })
-          } catch (error) {
-            // Revert on failure
-            setLeads((prevLeads) => {
-              return prevLeads.map((l) =>
-                l.lead_id.toString() === activeId
-                  ? { ...l, status_code: oldStatus }
-                  : l
-              )
-            })
-            toast({
-              title: 'Update Failed',
-              description:
-                error instanceof Error
-                  ? error.message
-                  : 'Could not update lead status.',
-              variant: 'destructive',
-            })
-          }
+          toast({
+            title: 'Update Failed',
+            description:
+              error instanceof Error
+                ? error.message
+                : 'Could not update lead status.',
+            variant: 'destructive',
+          })
         }
       }
     }
-
-    onDragEnd({ active, over })
   }
 
   const getLeadsForStatus = (statusCode: string) => {
@@ -232,7 +228,7 @@ export function KanbanBoard() {
     >
       <div className="kanban-container flex gap-6 overflow-x-auto pb-6">
         {statuses.map((status, index) => {
-          const columnLeads = getLeadsByStatus(status.status_code)
+          const columnLeads = getLeadsForStatus(status.status_code)
           const colorIndex = index % DEFAULT_COLORS.length
 
           return (
