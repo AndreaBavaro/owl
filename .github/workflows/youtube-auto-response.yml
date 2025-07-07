@@ -2,43 +2,149 @@ name: YouTube Auto Response Bot
 
 on:
   schedule:
-    # Run every 30 minutes
-    - cron: '*/30 * * * *'
+    # Run every 15 minutes during business hours (9 AM - 6 PM EST)
+    - cron: '*/15 9-18 * * 1-5'
+    # Run every hour during off-hours and weekends
+    - cron: '0 * * * *'
   workflow_dispatch: # Allow manual trigger
+    inputs:
+      days_back:
+        description: 'Number of days back to search for videos'
+        required: false
+        default: '30'
+        type: string
+      max_responses:
+        description: 'Maximum responses per run'
+        required: false
+        default: '5'
+        type: string
 
 jobs:
   youtube-bot:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-      
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0
+        
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: youtube-bot/package-lock.json
         
     - name: Install dependencies
       run: |
         cd youtube-bot
-        npm install
+        npm ci --only=production
+        
+    - name: Create data directory
+      run: |
+        mkdir -p youtube-bot/data
         
     - name: Run YouTube Bot
+      id: bot-run
       env:
         YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
         GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
         TARGET_CHANNEL_ID: ${{ secrets.TARGET_CHANNEL_ID }}
+        DAYS_BACK: ${{ github.event.inputs.days_back || '30' }}
+        MAX_RESPONSES: ${{ github.event.inputs.max_responses || '5' }}
       run: |
         cd youtube-bot
-        node index.js
+        echo "🚀 Starting YouTube Bot..."
+        echo "📅 Searching videos from last $DAYS_BACK days"
+        echo "🎯 Maximum responses per run: $MAX_RESPONSES"
+        
+        # Run the bot with timeout and error handling
+        timeout 25m node index.js 2>&1 | tee bot-output.log
+        
+        # Check if bot completed successfully
+        if [ ${PIPESTATUS[0]} -eq 0 ]; then
+          echo "✅ Bot completed successfully"
+          echo "bot_success=true" >> $GITHUB_OUTPUT
+        else
+          echo "❌ Bot failed or timed out"
+          echo "bot_success=false" >> $GITHUB_OUTPUT
+          exit 1
+        fi
+        
+    - name: Display Bot Statistics
+      if: always()
+      run: |
+        cd youtube-bot
+        echo "📊 Bot Run Statistics:"
+        if [ -f "data/processed_videos.json" ]; then
+          echo "Videos processed: $(jq length data/processed_videos.json 2>/dev/null || echo '0')"
+        fi
+        if [ -f "data/daily_responses.json" ]; then
+          today=$(date -u +"%Y-%m-%d")
+          echo "Responses today: $(jq -r ".\"$today\" // 0" data/daily_responses.json 2>/dev/null || echo '0')"
+        fi
+        if [ -f "bot-output.log" ]; then
+          echo "📝 Last 10 lines of bot output:"
+          tail -10 bot-output.log
+        fi
         
     - name: Commit and push changes
+      if: steps.bot-run.outputs.bot_success == 'true'
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add youtube-bot/data/
-        git diff --staged --quiet || git commit -m "Update bot data [skip ci]"
-        git push || true
+        # Configure git
+        git config --local user.email "youtube-bot@owlmortgage.com"
+        git config --local user.name "YouTube Auto Response Bot"
+        
+        # Add data files
+        git add youtube-bot/data/ || true
+        
+        # Check if there are changes to commit
+        if git diff --staged --quiet; then
+          echo "📝 No changes to commit"
+        else
+          # Create commit with timestamp and stats
+          timestamp=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          videos_count=$(jq length youtube-bot/data/processed_videos.json 2>/dev/null || echo '0')
+          
+          git commit -m "🤖 YouTube Bot Update - $timestamp" \
+                     -m "Videos processed: $videos_count" \
+                     -m "[skip ci]"
+          
+          # Push with retry logic
+          for i in {1..3}; do
+            if git push; then
+              echo "✅ Successfully pushed changes"
+              break
+            else
+              echo "⚠️ Push failed, attempt $i/3"
+              if [ $i -lt 3 ]; then
+                sleep 5
+                git pull --rebase
+              fi
+            fi
+          done
+        fi
+        
+    - name: Handle Bot Failure
+      if: failure() && steps.bot-run.outputs.bot_success == 'false'
+      run: |
+        echo "🚨 Bot run failed. Checking error logs..."
+        if [ -f "youtube-bot/bot-output.log" ]; then
+          echo "📋 Error output:"
+          cat youtube-bot/bot-output.log
+        fi
+        
+        # Still try to commit any partial data
+        cd youtube-bot
+        if [ -d "data" ] && [ "$(ls -A data)" ]; then
+          git config --local user.email "youtube-bot@owlmortgage.com"
+          git config --local user.name "YouTube Auto Response Bot"
+          git add data/ || true
+          git diff --staged --quiet || git commit -m "🚨 Partial bot data after failure [skip ci]" || true
+          git push || true
+        fi

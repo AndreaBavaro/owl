@@ -1,0 +1,30 @@
+[
+  {
+    "timestamp": "2025-07-07T02:02:36.511Z",
+    "level": "INFO",
+    "message": "Starting YouTube comment processing",
+    "data": {
+      "daysBack": 30,
+      "maxResponses": 5
+    }
+  },
+  {
+    "timestamp": "2025-07-07T02:02:36.515Z",
+    "level": "INFO",
+    "message": "Initial Processing Stats",
+    "data": {
+      "totalVideosProcessed": 0,
+      "totalCommentsChecked": 0,
+      "totalResponsesPosted": 0,
+      "dailyResponsesRemaining": 14,
+      "hourlyResponsesRemaining": 3,
+      "lastProcessedVideo": null
+    }
+  },
+  {
+    "timestamp": "2025-07-07T02:02:36.731Z",
+    "level": "ERROR",
+    "message": "Could not get channel ID",
+    "data": null
+  }
+]

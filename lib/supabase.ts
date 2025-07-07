@@ -37,11 +37,9 @@ if (!useSupabase && isDevelopment) {
 }
 
 // Auth types
-export type AuthProvider = 'google' | 'github' | 'facebook'
-
 // LeadWithUI interface removed - using Lead type directly
 
-// Authentication functions
+// Authentication functions - Secure email/password only
 export async function signInWithPassword(
   email: string,
   password: string
@@ -50,33 +48,19 @@ export async function signInWithPassword(
     console.log('Supabase not initialized')
     return { success: false, error: 'Database not available' }
   }
+
+  // Additional security: Sanitize inputs
+  const sanitizedEmail = email.trim().toLowerCase()
+
   const { error } = await supabase.auth.signInWithPassword({
-    email,
+    email: sanitizedEmail,
     password,
   })
 
   if (error) {
-    return { success: false, error: error.message }
-  }
-  return { success: true, error: null }
-}
-
-export async function signInWithProvider(
-  provider: AuthProvider
-): Promise<{ success: boolean; error: string | null }> {
-  if (!supabase) {
-    console.log('Supabase not initialized')
-    return { success: false, error: 'Database not available' }
-  }
-  const { error } = await supabase.auth.signInWithOAuth({
-    provider: provider as any,
-    options: {
-      redirectTo: `${window.location.origin}/dashboard`,
-    },
-  })
-
-  if (error) {
-    return { success: false, error: error.message }
+    // Security: Don't expose detailed error messages
+    console.log('Login error:', error.message)
+    return { success: false, error: 'Invalid email or password' }
   }
   return { success: true, error: null }
 }
