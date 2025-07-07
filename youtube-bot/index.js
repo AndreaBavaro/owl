@@ -1,5 +1,6 @@
 const { google } = require('googleapis')
 const fs = require('fs').promises
+const fsSync = require('fs')
 const path = require('path')
 
 // Configuration
@@ -126,20 +127,27 @@ class YouTubeBot {
     }
   }
 
-  async getRecentVideos(channelId, maxResults = 10) {
+  async getRecentVideos(channelId, maxResults = 50, daysBack = 30) {
     try {
+      const publishedAfter = new Date(
+        Date.now() - daysBack * 24 * 60 * 60 * 1000
+      ).toISOString()
+      
+      console.log(`🔍 Searching for videos published after: ${publishedAfter}`)
+      
       const response = await this.youtube.search.list({
-        part: 'id',
+        part: 'id,snippet',
         channelId: channelId,
         type: 'video',
         order: 'date',
         maxResults: maxResults,
-        publishedAfter: new Date(
-          Date.now() - 7 * 24 * 60 * 60 * 1000
-        ).toISOString(), // Last 7 days
+        publishedAfter: publishedAfter,
       })
 
-      return response.data.items || []
+      const videos = response.data.items || []
+      console.log(`📹 Found ${videos.length} videos from the last ${daysBack} days`)
+      
+      return videos
     } catch (error) {
       console.error('❌ Error getting recent videos:', error.message)
       return []
@@ -277,14 +285,140 @@ class YouTubeBot {
   }
 
   async hasRespondedToVideo(videoId) {
-    const videoData = await this.loadData('responded_videos.json')
-    return videoData[videoId] === true
+    const respondedVideos = await this.loadData('responded_videos.json')
+    return respondedVideos.includes(videoId)
   }
 
   async markVideoResponded(videoId) {
-    const videoData = await this.loadData('responded_videos.json')
-    videoData[videoId] = true
-    await this.saveData('responded_videos.json', videoData)
+    const respondedVideos = await this.loadData('responded_videos.json')
+    respondedVideos.push(videoId)
+    await this.saveData('responded_videos.json', respondedVideos)
+  }
+
+  async hasProcessedVideo(videoId) {
+    const processedVideos = await this.loadData('processed_videos.json')
+    return processedVideos.some(v => v.videoId === videoId)
+  }
+
+  async markVideoProcessed(videoId, videoTitle, publishedAt) {
+    const processedVideos = await this.loadData('processed_videos.json')
+    processedVideos.push({
+      videoId,
+      title: videoTitle,
+      publishedAt,
+      processedAt: new Date().toISOString(),
+      commentsChecked: 0,
+      responsesPosted: 0
+    })
+    await this.saveData('processed_videos.json', processedVideos)
+  }
+
+  async updateVideoStats(videoId, commentsChecked, responsesPosted) {
+    const processedVideos = await this.loadData('processed_videos.json')
+    const videoIndex = processedVideos.findIndex(v => v.videoId === videoId)
+    if (videoIndex !== -1) {
+      processedVideos[videoIndex].commentsChecked = commentsChecked
+      processedVideos[videoIndex].responsesPosted = responsesPosted
+      processedVideos[videoIndex].lastProcessed = new Date().toISOString()
+      await this.saveData('processed_videos.json', processedVideos)
+    }
+  }
+
+  async getProcessingStats() {
+    const processedVideos = await this.loadData('processed_videos.json')
+    const rateLimits = await this.checkRateLimits()
+    
+    // Ensure processedVideos is an array
+    const videosArray = Array.isArray(processedVideos) ? processedVideos : []
+    
+    return {
+      totalVideosProcessed: videosArray.length,
+      totalCommentsChecked: videosArray.reduce((sum, v) => sum + (v.commentsChecked || 0), 0),
+      totalResponsesPosted: videosArray.reduce((sum, v) => sum + (v.responsesPosted || 0), 0),
+      dailyResponsesRemaining: CONFIG.MAX_RESPONSES_PER_DAY - rateLimits.dailyCount,
+      hourlyResponsesRemaining: CONFIG.MAX_RESPONSES_PER_HOUR - rateLimits.hourlyCount,
+      lastProcessedVideo: videosArray.length > 0 ? videosArray[videosArray.length - 1] : null
+    }
+  }
+
+  // Enhanced logging system
+  async logActivity(level, message, data = null) {
+    const timestamp = new Date().toISOString()
+    const logEntry = {
+      timestamp,
+      level,
+      message,
+      data
+    }
+    
+    // Console output with colors
+    const colors = {
+      INFO: '\x1b[36m',    // Cyan
+      SUCCESS: '\x1b[32m', // Green
+      WARNING: '\x1b[33m', // Yellow
+      ERROR: '\x1b[31m',   // Red
+      RESET: '\x1b[0m'     // Reset
+    }
+    
+    const color = colors[level] || colors.RESET
+    console.log(`${color}[${timestamp}] ${level}: ${message}${colors.RESET}`)
+    if (data) {
+      console.log(`${color}Data:${colors.RESET}`, JSON.stringify(data, null, 2))
+    }
+    
+    // Save to log file
+    await this.saveLogEntry(logEntry)
+  }
+  
+  async saveLogEntry(logEntry) {
+    try {
+      const logFile = path.join(this.dataDir, 'activity_log.json')
+      let logs = []
+      
+      if (fsSync.existsSync(logFile)) {
+        const content = fsSync.readFileSync(logFile, 'utf8')
+        logs = JSON.parse(content)
+      }
+      
+      logs.push(logEntry)
+      
+      // Keep only last 1000 log entries to prevent file from growing too large
+      if (logs.length > 1000) {
+        logs = logs.slice(-1000)
+      }
+      
+      fsSync.writeFileSync(logFile, JSON.stringify(logs, null, 2))
+    } catch (error) {
+      console.error('Failed to save log entry:', error.message)
+    }
+  }
+  
+  async generateDailyReport() {
+    const today = new Date().toISOString().split('T')[0]
+    const stats = await this.getProcessingStats()
+    const rateLimits = await this.checkRateLimits()
+    
+    const report = {
+      date: today,
+      timestamp: new Date().toISOString(),
+      statistics: stats,
+      rateLimits: {
+        hourlyUsed: rateLimits.hourlyCount,
+        dailyUsed: rateLimits.dailyCount,
+        hourlyLimit: CONFIG.MAX_RESPONSES_PER_HOUR,
+        dailyLimit: CONFIG.MAX_RESPONSES_PER_DAY
+      },
+      performance: {
+        videosProcessedToday: stats.totalVideosProcessed,
+        commentsCheckedToday: stats.totalCommentsChecked,
+        responsesPostedToday: stats.totalResponsesPosted
+      }
+    }
+    
+    await this.logActivity('INFO', 'Daily report generated', report)
+    await this.saveData(`daily_report_${today}.json`, report)
+    
+    return report
   }
 
   async postComment(commentId, responseText) {
@@ -310,37 +444,47 @@ class YouTubeBot {
 
       return true
     } catch (error) {
-      console.error('❌ Error posting comment:', error.message)
+      await this.logActivity('ERROR', 'Error posting comment', { error: error.message })
       return false
     }
   }
 
-  async processComments() {
-    console.log('🚀 Starting YouTube comment processing...')
+  async processComments(daysBack = 30, maxResponses = 5) {
+    await this.logActivity('INFO', 'Starting YouTube comment processing', { daysBack, maxResponses })
+    
+    // Get initial stats
+    const initialStats = await this.getProcessingStats()
+    await this.logActivity('INFO', 'Initial Processing Stats', initialStats)
 
     // Check rate limits
     const rateLimits = await this.checkRateLimits()
     if (!rateLimits.canRespond) {
-      console.log(
-        `⏸️ Rate limit reached. Daily: ${rateLimits.dailyCount}/${CONFIG.MAX_RESPONSES_PER_DAY}, Hourly: ${rateLimits.hourlyCount}/${CONFIG.MAX_RESPONSES_PER_HOUR}`
-      )
+      await this.logActivity('WARNING', 'Rate limit reached', {
+        daily: `${rateLimits.dailyCount}/${CONFIG.MAX_RESPONSES_PER_DAY}`,
+        hourly: `${rateLimits.hourlyCount}/${CONFIG.MAX_RESPONSES_PER_HOUR}`
+      })
       return
     }
 
     // Get channel ID
     const channelId = await this.getChannelId()
     if (!channelId) {
-      console.error('❌ Could not get channel ID')
+      await this.logActivity('ERROR', 'Could not get channel ID')
       return
     }
 
-    console.log(`📺 Found channel ID: ${channelId}`)
+    await this.logActivity('SUCCESS', 'Found channel ID', { channelId })
 
-    // Get recent videos
-    const videos = await this.getRecentVideos(channelId)
-    console.log(`🎥 Found ${videos.length} recent videos`)
+    // Get recent videos from the specified time period
+    const videos = await this.getRecentVideos(channelId, 50, daysBack)
+    await this.logActivity('INFO', `Found videos from the last ${daysBack} days`, { 
+      videoCount: videos.length,
+      daysBack 
+    })
 
     let responsesPosted = 0
+    let videosProcessed = 0
+    let totalCommentsChecked = 0
 
     for (const video of videos) {
       if (responsesPosted >= CONFIG.MAX_RESPONSES_PER_HOUR) {
@@ -349,20 +493,30 @@ class YouTubeBot {
       }
 
       const videoId = video.id.videoId
+      const videoTitle = video.snippet?.title || 'Unknown Title'
+      const publishedAt = video.snippet?.publishedAt
+      
+      console.log(`🎥 Processing: "${videoTitle}" (${videoId})`)
 
-      // Skip if we've already responded to this video
-      if (await this.hasRespondedToVideo(videoId)) {
-        console.log(`⏭️ Already responded to video: ${videoId}`)
+      // Check if we've already processed this video
+      if (await this.hasProcessedVideo(videoId)) {
+        console.log(`⏭️ Already processed video: ${videoTitle}`)
         continue
       }
 
-      console.log(`🔍 Processing comments for video: ${videoId}`)
+      // Mark video as processed
+      await this.markVideoProcessed(videoId, videoTitle, publishedAt)
+      videosProcessed++
 
       const comments = await this.getVideoComments(videoId)
       console.log(`💬 Found ${comments.length} comments`)
+      totalCommentsChecked += comments.length
+      
+      let videoResponses = 0
 
       for (const commentThread of comments) {
         if (responsesPosted >= CONFIG.MAX_RESPONSES_PER_HOUR) break
+        if (videoResponses >= 1) break // Only respond once per video to avoid spam
 
         const comment = commentThread.snippet.topLevelComment.snippet
         const commentText = comment.textOriginal
@@ -402,6 +556,7 @@ class YouTubeBot {
           await this.markVideoResponded(videoId)
 
           responsesPosted++
+          videoResponses++
 
           // Add random delay between responses
           const delayMinutes =
@@ -419,12 +574,30 @@ class YouTubeBot {
           console.log('❌ Failed to post response')
         }
 
-        // Only respond once per video to avoid spam
-        break
+        break // Only respond once per video
       }
+      
+      // Update video stats
+      await this.updateVideoStats(videoId, comments.length, videoResponses)
     }
 
-    console.log(`🏁 Finished processing. Posted ${responsesPosted} responses.`)
+    // Log final processing results
+    const sessionStats = {
+      videosProcessed,
+      commentsChecked: totalCommentsChecked,
+      responsesPosted
+    }
+    
+    await this.logActivity('SUCCESS', 'Processing session completed', sessionStats)
+    
+    // Get and log final overall stats
+    const finalStats = await this.getProcessingStats()
+    await this.logActivity('INFO', 'Final overall statistics', finalStats)
+    
+    // Generate daily report if it's a new day or significant activity
+    if (responsesPosted > 0 || videosProcessed > 10) {
+      await this.generateDailyReport()
+    }
   }
 
   async run() {

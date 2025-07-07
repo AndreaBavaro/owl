@@ -1,15 +1,19 @@
 # YouTube Auto-Response Bot for Owl Mortgage
 
-This bot automatically monitors the @wiseoldowlshow YouTube channel and responds to comments containing mortgage-related keywords with helpful messages directing users to the Owl Mortgage contact form.
+This enhanced bot automatically monitors the @wiseoldowlshow YouTube channel and responds to comments containing mortgage-related keywords with helpful messages directing users to the Owl Mortgage contact form.
 
-## Features
+## 🚀 Enhanced Features
 
-- ✅ Monitors @wiseoldowlshow channel comments 24/7
-- ✅ Detects 30+ mortgage-related keywords
-- ✅ Smart response logic (different responses for questions vs statements)
-- ✅ YouTube compliance (rate limiting, duplicate prevention)
-- ✅ Fully automated via GitHub Actions (free)
-- ✅ Persistent tracking to avoid spam
+- ✅ **Extended Coverage**: Processes videos from the last **30 days** (upgraded from 7 days)
+- ✅ **Smart Scheduling**: Runs every 15 minutes during business hours, hourly otherwise
+- ✅ **Advanced Tracking**: Comprehensive video and comment processing statistics
+- ✅ **Duplicate Prevention**: Tracks processed videos to avoid redundant work
+- ✅ **Enhanced Logging**: Detailed statistics and processing insights
+- ✅ **Error Handling**: Robust failure recovery and partial data preservation
+- ✅ **Rate Limiting**: YouTube API compliance with configurable limits
+- ✅ **Keyword Detection**: 30+ mortgage-related keywords with smart response logic
+- ✅ **GitHub Actions**: Fully automated with manual trigger options
+- ✅ **Data Persistence**: Maintains processing history and response tracking
 
 ## Setup Instructions
 
@@ -47,19 +51,62 @@ GOOGLE_CLIENT_SECRET: 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
    ```
 
 3. Follow the instructions to authorize your dedicated YouTube account
+4. Copy the refresh token and add it to GitHub Secrets as `GOOGLE_REFRESH_TOKEN`
 
-4. Add the refresh token as a GitHub Secret:
-   ```
-   GOOGLE_REFRESH_TOKEN: [the token from step 3]
-   ```
+### 4. Test the Bot
 
-### 4. Enable GitHub Actions
+```bash
+cd youtube-bot
+node index.js
+```
 
-1. Go to your repository → Actions tab
-2. Enable GitHub Actions if not already enabled
-3. The bot will run automatically every 30 minutes
+The bot will:
+- Find the target channel
+- Get recent videos (last **30 days**)
+- Check comments for keywords
+- Post responses (if any matches found)
+- Save comprehensive tracking data
+- Display detailed processing statistics
+
+## 🤖 Enhanced Automation
+
+### Smart Scheduling
+The bot runs automatically via GitHub Actions with intelligent scheduling:
+
+- **Business Hours (9 AM - 6 PM EST, Mon-Fri)**: Every 15 minutes
+- **Off-Hours & Weekends**: Every hour
+- **Manual Triggers**: Available with custom parameters
+
+### Manual Trigger Options
+You can manually trigger the bot with custom settings:
+
+1. Go to **Actions** tab in GitHub repository
+2. Select **YouTube Auto Response Bot** workflow
+3. Click **Run workflow**
+4. Configure options:
+   - **Days Back**: Number of days to search (default: 30)
+   - **Max Responses**: Maximum responses per run (default: 5)
+
+### Enhanced Tracking
+The bot now maintains comprehensive statistics:
+
+- **Video Processing**: Tracks all processed videos with metadata
+- **Comment Analysis**: Counts comments checked per video
+- **Response Tracking**: Monitors successful responses and rate limits
+- **Error Handling**: Preserves data even during failures
+- **Performance Metrics**: Detailed logging and statistics
 
 ## How It Works
+
+1. **Extended Coverage**: Searches @wiseoldowlshow for videos from last 30 days
+2. **Smart Processing**: Avoids reprocessing previously handled videos
+3. **Comment Analysis**: Scans comments for 30+ mortgage keywords
+4. **Intelligent Responses**: Different responses for questions vs statements
+5. **Rate Limiting**: Max 2-3 responses/hour, 10-15/day with smart scheduling
+6. **Duplicate Prevention**: Comprehensive tracking of users, videos, and responses
+7. **YouTube Compliance**: Follows all community guidelines and API limits
+
+## Response Examples
 
 ### Keywords Monitored
 
@@ -88,7 +135,7 @@ wealth, renewal, mortgage, refinance, equity, money, home, purchase, rate, bank,
 - ✅ Skips very short comments (under 5 words)
 - ✅ Skips comments with many existing replies
 - ✅ Random delays between responses (5-15 minutes)
-- ✅ Only responds to recent videos (last 7 days)
+- ✅ Only responds to recent videos (last **30 days**)
 
 ## Monitoring
 
@@ -98,14 +145,25 @@ wealth, renewal, mortgage, refinance, equity, money, home, purchase, rate, bank,
 - View recent workflow runs
 - Check logs for any errors or response activity
 
-### Data Tracking
+### Enhanced Data Tracking
 
-The bot maintains these files in `youtube-bot/data/`:
+The bot maintains comprehensive tracking files in `youtube-bot/data/`:
 
-- `daily_responses.json` - Daily response counts
-- `hourly_responses.json` - Hourly response counts
-- `responded_users.json` - Users already responded to
-- `responded_videos.json` - Videos already responded to
+**Response Tracking:**
+- `daily_responses.json` - Daily response counts with timestamps
+- `hourly_responses.json` - Hourly response counts with rate limiting
+- `responded_users.json` - Users already responded to (7-day tracking)
+- `responded_videos.json` - Videos already responded to (permanent)
+
+**Enhanced Processing Data:**
+- `processed_videos.json` - Complete video processing history with metadata
+- `video_stats.json` - Per-video statistics (comments checked, responses posted)
+- `processing_stats.json` - Overall bot performance metrics and summaries
+
+**Rate Limiting:**
+- Automatic cleanup of expired tracking data
+- Smart rate limiting based on time windows
+- Comprehensive logging of all bot activities
 
 ### Manual Trigger
 
