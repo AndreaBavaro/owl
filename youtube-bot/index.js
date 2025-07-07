@@ -353,60 +353,87 @@ class YouTubeBot {
     }
   }
 
-  async processComments(
-    daysBack = 30,
-    maxResponses = CONFIG.MAX_RESPONSES_PER_HOUR
-  ) {
-    await this.logActivity('INFO', 'Starting comment processing', {
-      daysBack,
-      maxResponses,
-    })
-    const rl = await this.checkRateLimits()
-    if (!rl.canRespond)
-      return this.logActivity('WARNING', 'Rate limit reached', rl)
-
-    const channelId = await this.getChannelId()
-    if (!channelId) return this.logActivity('ERROR', 'No channel ID')
-
-    const videos = await this.getRecentVideos(channelId, 50, daysBack)
-    let responses = 0
+  async processComments(daysBack = 30) {
+    await this.logActivity('INFO', 'Starting processing', { daysBack })
+    const rl = await this.loadData('daily_responses.json')
+    const videos = await this.getRecentVideos(
+      await this.getChannelId(),
+      50,
+      daysBack
+    )
     for (const vid of videos) {
-      if (responses >= maxResponses) break
       const vidId = vid.id.videoId
-      if (await this.hasProcessedVideo(vidId)) continue
-      await this.markVideoProcessed(
-        vidId,
-        vid.snippet.title,
-        vid.snippet.publishedAt
+      if (
+        (await this.loadData('processed_videos.json')).some(
+          (v) => v.videoId === vidId
+        )
       )
+        continue
+      await this.saveData('processed_videos.json', [
+        ...(await this.loadData('processed_videos.json')),
+        {
+          videoId: vidId,
+          title: vid.snippet.title,
+          publishedAt: vid.snippet.publishedAt,
+          processedAt: new Date().toISOString(),
+          commentsChecked: 0,
+          responsesPosted: 0,
+        },
+      ])
 
       const comments = await this.getVideoComments(vidId)
       for (const thread of comments) {
-        if (responses >= maxResponses) break
         const c = thread.snippet.topLevelComment.snippet
+        const commentId = thread.snippet.topLevelComment.id
         if (c.textOriginal.length < CONFIG.MIN_COMMENT_LENGTH) continue
         if (thread.snippet.totalReplyCount > CONFIG.MAX_REPLIES_TO_SKIP)
           continue
         const author = c.authorChannelId?.value
-        if (author && (await this.hasRespondedToUser(author))) continue
+        if (
+          author &&
+          (await this.loadData('responded_users.json'))[author] &&
+          Date.now() -
+            new Date((await this.loadData('responded_users.json'))[author]) <
+            7 * 86400000
+        )
+          continue
+
         const keyword = this.containsKeywords(c.textOriginal)
         if (!keyword) continue
 
         const reply = this.generateResponse(c.textOriginal, keyword)
-        if (await this.postComment(thread.snippet.topLevelComment.id, reply)) {
-          await this.incrementResponseCount()
-          if (author) await this.markUserResponded(author)
-          await this.markVideoResponded(vidId)
-          responses++
+        const success = await this.postComment(commentId, reply)
+
+        // Detailed logging for each reply attempt
+        await this.logActivity(
+          'INFO',
+          success ? 'Replied' : 'Failed to reply',
+          {
+            videoId: vidId,
+            commentId,
+            commentText: c.textOriginal,
+            replyText: reply,
+          }
+        )
+
+        if (success) {
+          // Track counters
+          const dr = await this.loadData('daily_responses.json')
+          dr[new Date().toISOString().split('T')[0]] =
+            (dr[new Date().toISOString().split('T')[0]] || 0) + 1
+          await this.saveData('daily_responses.json', dr)
+          const ru = await this.loadData('responded_users.json')
+          ru[author] = new Date().toISOString()
+          await this.saveData('responded_users.json', ru)
+          await this.saveData('responded_videos.json', [
+            ...(await this.loadData('responded_videos.json')),
+            vidId,
+          ])
+          break // only one reply per video
         }
       }
-      await this.updateVideoStats(vidId, comments.length, responses)
     }
-    await this.logActivity(
-      'INFO',
-      'Processing complete',
-      await this.getProcessingStats()
-    )
+    await this.logActivity('INFO', 'Processing finished')
   }
 
   async run() {
@@ -414,5 +441,4 @@ class YouTubeBot {
   }
 }
 
-// Run the bot
 new YouTubeBot().run().catch((err) => console.error('❌ Bot crashed:', err))
