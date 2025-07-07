@@ -358,7 +358,7 @@ export default function AnalyticsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleExportCSV('sources')}
+                    onClick={handleExportLeads}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export
@@ -402,7 +402,7 @@ export default function AnalyticsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleExportCSV('services')}
+                    onClick={handleExportLeads}
                   >
                     <Download className="h-4 w-4 mr-2" />
                     Export
@@ -478,11 +478,7 @@ export default function AnalyticsPage() {
                   <TrendingUp className="h-5 w-5 mr-2" />
                   Monthly Trends
                 </CardTitle>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleExportCSV('trends')}
-                >
+                <Button variant="outline" size="sm" onClick={handleExportLeads}>
                   <Download className="h-4 w-4 mr-2" />
                   Export
                 </Button>
