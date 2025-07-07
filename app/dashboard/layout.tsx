@@ -25,7 +25,7 @@ export default function DashboardLayout({
           router.push('/login')
           return
         }
-        
+
         const user = await getCurrentUser()
         setUserEmail(user?.email || null)
         setLoading(false)
@@ -34,7 +34,7 @@ export default function DashboardLayout({
         router.push('/login')
       }
     }
-    
+
     checkAuth()
   }, [router])
 
@@ -68,14 +68,18 @@ export default function DashboardLayout({
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <h1 className="text-xl font-semibold text-gray-900">Mortgage Lead Hub</h1>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-end">
           <div className="flex items-center space-x-4">
             <div className="flex items-center text-sm text-gray-500">
               <User className="h-4 w-4 mr-1" />
               <span>{userEmail}</span>
             </div>
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSignOut}
+              className="flex items-center gap-1"
+            >
               <LogOut className="h-4 w-4" />
               Sign out
             </Button>

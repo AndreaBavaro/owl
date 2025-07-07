@@ -35,6 +35,7 @@ import {
   getDateRanges,
   filterLeadsByDateRange,
   exportToCSV,
+  exportLeadsToCSV,
   AnalyticsData,
   DateRange,
 } from '@/lib/analytics'
@@ -153,29 +154,17 @@ export default function AnalyticsPage() {
     }
   }
 
-  const handleExportCSV = (dataType: string) => {
-    if (!analyticsData) return
+  const handleExportLeads = () => {
+    const currentRange = dateRanges[selectedDateRange]
+    const filteredLeads = filterLeadsByDateRange(leads, currentRange)
+    const filename =
+      selectedDateRange === 'all' ? 'all_leads' : `leads_${selectedDateRange}`
 
-    switch (dataType) {
-      case 'sources':
-        exportToCSV(analyticsData.sourceDistribution, 'lead_sources')
-        break
-      case 'services':
-        exportToCSV(analyticsData.serviceDistribution, 'lead_services')
-        break
-      case 'performance':
-        exportToCSV(analyticsData.sourcePerformance, 'source_performance')
-        break
-      case 'trends':
-        exportToCSV(analyticsData.monthlyTrends, 'monthly_trends')
-        break
-      default:
-        exportToCSV(leads, 'all_leads')
-    }
+    exportLeadsToCSV(filteredLeads, filename)
 
     toast({
-      title: 'Success',
-      description: 'Data exported successfully',
+      title: 'Export Started',
+      description: `Exporting ${filteredLeads.length} leads to CSV`,
     })
   }
 
@@ -243,6 +232,15 @@ export default function AnalyticsPage() {
               >
                 <TrendingUp className="h-4 w-4 mr-2" />
                 {showComparison ? 'Hide' : 'Show'} Comparison
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleExportLeads}
+                className="flex items-center gap-2"
+                title="Export leads to CSV"
+              >
+                <Download className="h-4 w-4" />
+                Export CSV
               </Button>
               <Button
                 variant="outline"
@@ -439,53 +437,14 @@ export default function AnalyticsPage() {
               </Card>
             </div>
 
-            {/* Charts Row 2 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Conversion Funnel */}
+            {/* Source Performance */}
+            <div className="grid grid-cols-1 gap-6">
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <Users className="h-5 w-5 mr-2" />
-                    Conversion Funnel
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {analyticsData.conversionFunnel.map((item, index) => (
-                      <div key={item.status} className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="font-medium">{item.status}</span>
-                          <span className="text-sm text-gray-600">
-                            {item.count} leads ({item.percentage}%)
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${item.percentage}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Source Performance */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="flex items-center">
                     <BarChart3 className="h-5 w-5 mr-2" />
                     Source Performance
                   </CardTitle>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleExportCSV('performance')}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
@@ -495,15 +454,14 @@ export default function AnalyticsPage() {
                           <span className="font-medium">{item.source}</span>
                           <div className="text-right">
                             <div className="text-sm">{item.leads} leads</div>
-                            <div className="text-sm text-gray-600">
-                              {item.rate}% conversion
-                            </div>
                           </div>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
-                            className="bg-green-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${item.rate}%` }}
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style={{
+                              width: `${Math.min((item.leads / Math.max(...analyticsData.sourcePerformance.map((s) => s.leads))) * 100, 100)}%`,
+                            }}
                           />
                         </div>
                       </div>
@@ -539,44 +497,9 @@ export default function AnalyticsPage() {
                       <div className="text-2xl font-bold mt-1">
                         {item.leads}
                       </div>
-                      <div className="text-sm text-gray-600">
-                        {item.conversions} conversions
-                      </div>
+                      <div className="text-sm text-gray-600">leads</div>
                     </div>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Export All Data */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Export Data</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-4">
-                  <Button onClick={() => handleExportCSV('all')}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Export All Leads
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleExportCSV('sources')}
-                  >
-                    Export Source Data
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleExportCSV('services')}
-                  >
-                    Export Service Data
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => handleExportCSV('performance')}
-                  >
-                    Export Performance Data
-                  </Button>
                 </div>
               </CardContent>
             </Card>

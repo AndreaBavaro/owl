@@ -234,34 +234,6 @@ export async function updateLead(
 // Import UUID generation library
 import { v4 as uuidv4 } from 'uuid'
 
-export async function createLead(
-  lead: Omit<Lead, 'lead_id' | 'created_at' | 'client_id'>
-): Promise<Lead | null> {
-  if (!supabase) {
-    console.log('Supabase not initialized')
-    return null
-  }
-
-  try {
-    const clientSchema = getCurrentClientSchema()
-
-    const { data, error } = await supabase.rpc('insert_lead_for_client', {
-      client_schema: clientSchema,
-      lead_data: lead,
-    })
-
-    if (error) {
-      console.error('Error creating lead:', error)
-      throw error
-    }
-
-    return data
-  } catch (error) {
-    console.error('Error in createLead:', error)
-    return null
-  }
-}
-
 export async function deleteLead(
   leadId: number
 ): Promise<{ success: boolean; error: any }> {

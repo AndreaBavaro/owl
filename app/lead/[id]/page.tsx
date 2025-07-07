@@ -2,12 +2,30 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ArrowLeft, Phone, Mail, Save, Trash2, UserCheck, UserPlus, ExternalLink, Calendar, User, Hash } from 'lucide-react'
+import {
+  ArrowLeft,
+  Phone,
+  Mail,
+  Save,
+  Trash2,
+  UserCheck,
+  UserPlus,
+  ExternalLink,
+  Calendar,
+  User,
+  Hash,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { getLeadById, updateLead, deleteLead } from '@/lib/supabase'
 import { Lead } from '@/lib/database.types'
 import { useToast } from '@/hooks/use-toast'
@@ -29,7 +47,7 @@ export default function LeadDetailPage() {
     referral_name: '',
     source: '',
     status_code: 'new_lead',
-    service: ''
+    service: '',
   })
 
   useEffect(() => {
@@ -44,7 +62,7 @@ export default function LeadDetailPage() {
       if (isNaN(leadId)) {
         throw new Error('Invalid lead ID')
       }
-      
+
       const data = await getLeadById(leadId)
       if (data) {
         setLead(data)
@@ -57,7 +75,7 @@ export default function LeadDetailPage() {
           referral_name: data.referral_name || '',
           source: data.source || '',
           status_code: data.status_code || 'new_lead',
-          service: data.service || ''
+          service: data.service || '',
         })
       } else {
         toast({
@@ -110,15 +128,15 @@ export default function LeadDetailPage() {
 
     if (confirm('Are you sure you want to delete this lead?')) {
       try {
-        const success = await deleteLead(lead.lead_id)
-        if (success) {
+        const result = await deleteLead(lead.lead_id)
+        if (result.success) {
           toast({
             title: 'Success',
             description: 'Lead deleted successfully',
           })
           router.push('/dashboard')
         } else {
-          throw new Error('Failed to delete lead')
+          throw new Error(result.error?.message || 'Failed to delete lead')
         }
       } catch (error) {
         toast({
@@ -167,21 +185,38 @@ export default function LeadDetailPage() {
               </Button>
               <div>
                 <div className="flex items-center space-x-2">
-                  <h1 className="text-2xl font-bold text-gray-900">{`${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'Unnamed Lead'}</h1>
-                  <Badge className={lead.status_code === 'new_lead' || lead.status_code === 'new' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}>
-                    {lead.status_code === 'new_lead' || lead.status_code === 'new' ? 'New Lead' : 'Existing Client'}
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    {`${lead.first_name || ''} ${lead.last_name || ''}`.trim() ||
+                      'Unnamed Lead'}
+                  </h1>
+                  <Badge
+                    className={
+                      lead.status_code === 'new_lead' ||
+                      lead.status_code === 'new'
+                        ? 'bg-blue-100 text-blue-800'
+                        : 'bg-green-100 text-green-800'
+                    }
+                  >
+                    {lead.status_code === 'new_lead' ||
+                    lead.status_code === 'new'
+                      ? 'New Lead'
+                      : 'Existing Client'}
                   </Badge>
-                  {lead.source && <Badge className="bg-purple-100 text-purple-800">{lead.source}</Badge>}
-                  {lead.service && <Badge className="bg-orange-100 text-orange-800">{lead.service}</Badge>}
+                  {lead.source && (
+                    <Badge className="bg-purple-100 text-purple-800">
+                      {lead.source}
+                    </Badge>
+                  )}
+                  {lead.service && (
+                    <Badge className="bg-orange-100 text-orange-800">
+                      {lead.service}
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
             <div className="flex space-x-2">
-              <Button
-                size="sm"
-                onClick={handleSave}
-                disabled={saving}
-              >
+              <Button size="sm" onClick={handleSave} disabled={saving}>
                 <Save className="h-4 w-4 mr-2" />
                 {saving ? 'Saving...' : 'Save'}
               </Button>
@@ -207,7 +242,9 @@ export default function LeadDetailPage() {
                     </label>
                     <Input
                       value={formData.first_name}
-                      onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, first_name: e.target.value })
+                      }
                     />
                   </div>
                   <div>
@@ -216,7 +253,9 @@ export default function LeadDetailPage() {
                     </label>
                     <Input
                       value={formData.last_name}
-                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, last_name: e.target.value })
+                      }
                     />
                   </div>
                   <div>
@@ -226,7 +265,9 @@ export default function LeadDetailPage() {
                     <Input
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, email: e.target.value })
+                      }
                     />
                   </div>
                   <div>
@@ -235,7 +276,9 @@ export default function LeadDetailPage() {
                     </label>
                     <Input
                       value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, phone: e.target.value })
+                      }
                     />
                   </div>
                   <div>
@@ -244,15 +287,21 @@ export default function LeadDetailPage() {
                     </label>
                     <Select
                       value={formData.service}
-                      onValueChange={(value) => setFormData({ ...formData, service: value })}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, service: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select service" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="First Time Buying">First Time Buying</SelectItem>
+                        <SelectItem value="First Time Buying">
+                          First Time Buying
+                        </SelectItem>
                         <SelectItem value="Refinancing">Refinancing</SelectItem>
-                        <SelectItem value="Reverse Mortgage">Reverse Mortgage</SelectItem>
+                        <SelectItem value="Reverse Mortgage">
+                          Reverse Mortgage
+                        </SelectItem>
                         <SelectItem value="Other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -263,7 +312,9 @@ export default function LeadDetailPage() {
                     </label>
                     <Select
                       value={formData.status_code}
-                      onValueChange={(value) => setFormData({ ...formData, status_code: value })}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, status_code: value })
+                      }
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
@@ -320,7 +371,11 @@ export default function LeadDetailPage() {
                 <p className="text-sm text-gray-600 mb-4">
                   Once you delete a lead, there is no going back.
                 </p>
-                <Button variant="destructive" onClick={handleDelete} className="w-full">
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  className="w-full"
+                >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete Lead
                 </Button>

@@ -5,48 +5,67 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    /* OwlMortgage Brand Colors - Light Mode */
+    --om-primary: #133f64;
+    --om-secondary: #069a9c;
+    --om-bg: #f4f8fa;
+    --om-text: #0e1824;
+    --om-success: #06a070;
+    --om-surface: #ffffff;
+    --om-border: #e2e8f0;
+
+    /* Standard theme tokens */
+    --background: 244 248 250; /* F4F8FA */
+    --foreground: 14 24 36; /* 0E1824 */
+    --card: 255 255 255;
+    --card-foreground: 14 24 36;
+    --popover: 255 255 255;
+    --popover-foreground: 14 24 36;
+    --primary: 19 63 100; /* 133F64 */
+    --primary-foreground: 255 255 255;
+    --secondary: 6 154 156; /* 069A9C */
+    --secondary-foreground: 255 255 255;
+    --muted: 241 245 249;
+    --muted-foreground: 100 116 139;
+    --accent: 6 154 156;
+    --accent-foreground: 255 255 255;
+    --destructive: 239 68 68;
+    --destructive-foreground: 255 255 255;
+    --border: 226 232 240;
+    --input: 255 255 255;
+    --ring: 6 154 156;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    /* OwlMortgage Brand Colors - Dark Mode */
+    --om-bg-dark: #0e1824;
+    --om-surface-dark: #142233;
+    --om-text-dark: #e4eef6;
+    --om-primary-dark: #30b3c4;
+    --om-success-dark: #3ac88b;
+    --om-border-dark: #1e293b;
+
+    /* Standard theme tokens */
+    --background: 14 24 36; /* 0E1824 */
+    --foreground: 228 238 246; /* E4EEF6 */
+    --card: 20 34 51; /* 142233 */
+    --card-foreground: 228 238 246;
+    --popover: 20 34 51;
+    --popover-foreground: 228 238 246;
+    --primary: 48 179 196; /* 30B3C4 */
+    --primary-foreground: 14 24 36;
+    --secondary: 30 41 59;
+    --secondary-foreground: 228 238 246;
+    --muted: 30 41 59;
+    --muted-foreground: 148 163 184;
+    --accent: 48 179 196;
+    --accent-foreground: 14 24 36;
+    --destructive: 239 68 68;
+    --destructive-foreground: 228 238 246;
+    --border: 30 41 59;
+    --input: 30 41 59;
+    --ring: 48 179 196;
   }
 }
 
@@ -96,6 +115,112 @@
 .lead-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 8px 25px -8px rgba(0, 0, 0, 0.1);
+}
+
+/* OwlMortgage Enhanced Styling */
+.om-card {
+  @apply rounded-xl shadow-sm border border-border bg-card p-6;
+  transition: all 150ms ease-in-out;
+}
+
+.om-card:hover {
+  @apply -translate-y-0.5;
+  box-shadow:
+    0 10px 25px -5px rgba(19, 63, 100, 0.1),
+    0 8px 10px -6px rgba(19, 63, 100, 0.1);
+}
+
+.dark .om-card:hover {
+  box-shadow:
+    0 10px 25px -5px rgba(48, 179, 196, 0.15),
+    0 8px 10px -6px rgba(48, 179, 196, 0.1);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.om-kpi-card {
+  @apply om-card;
+  background: linear-gradient(
+    135deg,
+    rgba(6, 154, 156, 0.02) 0%,
+    rgba(19, 63, 100, 0.02) 100%
+  );
+}
+
+.dark .om-kpi-card {
+  background: linear-gradient(
+    135deg,
+    rgba(48, 179, 196, 0.05) 0%,
+    rgba(20, 34, 51, 1) 100%
+  );
+}
+
+.om-focus-ring {
+  @apply outline outline-2 outline-offset-2 outline-secondary;
+}
+
+.dark .om-focus-ring {
+  @apply outline-primary;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .om-card:hover {
+    @apply translate-y-0;
+    transition: none;
+  }
+}
+
+/* Empty state styling */
+.om-empty-state {
+  @apply text-secondary/60;
+}
+
+.dark .om-empty-state {
+  @apply text-primary/60;
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition:
+    color 0.2s ease-in-out,
+    background-color 0.2s ease-in-out,
+    border-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
+}
+
+/* Button hover effects with theme colors */
+.btn-primary {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-primary:hover {
+  background: hsl(var(--primary) / 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px -4px hsl(var(--primary) / 0.4);
+}
+
+/* Enhanced card styling */
+.enhanced-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) + 2px);
+  transition: all 0.2s ease-in-out;
+}
+
+.enhanced-card:hover {
+  border-color: hsl(var(--primary) / 0.3);
+  box-shadow: 0 4px 12px -4px hsl(var(--primary) / 0.1);
+}
+
+/* Smooth logo animation */
+.logo-container {
+  transition: transform 0.2s ease-in-out;
+}
+
+.logo-container:hover {
+  transform: scale(1.05);
 }
 
 /* Source badge gradients */

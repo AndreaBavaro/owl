@@ -1,9 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
-import { Phone, Mail, Archive, MoreVertical } from 'lucide-react'
+import { Phone, Mail, Trash2, MoreVertical } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,26 +26,6 @@ interface LeadCardProps {
 export function LeadCard({ lead, onArchive }: LeadCardProps) {
   const [isHovered, setIsHovered] = useState(false)
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
-    id: lead.lead_id.toString(),
-    data: {
-      type: 'lead',
-      lead,
-    },
-  })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  }
-
   const handleCall = () => {
     window.open(`tel:${lead.phone}`, '_self')
   }
@@ -62,13 +40,7 @@ export function LeadCard({ lead, onArchive }: LeadCardProps) {
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className={`lead-card relative w-[280px] h-[120px] rounded-lg border bg-white p-4 shadow-sm cursor-grab active:cursor-grabbing ${
-        isDragging ? 'opacity-50 shadow-lg' : ''
-      }`}
+      className="lead-card relative w-[280px] h-[120px] rounded-lg border bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
       id={lead.lead_id.toString()}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -163,9 +135,12 @@ export function LeadCard({ lead, onArchive }: LeadCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleArchive}>
-                <Archive className="mr-2 h-4 w-4" />
-                Archive
+              <DropdownMenuItem
+                onClick={handleArchive}
+                className="text-red-600 focus:text-red-600"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

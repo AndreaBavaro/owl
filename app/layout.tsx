@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, Roboto_Mono } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
+import { ThemeProvider } from '@/components/providers/ThemeProvider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -87,9 +88,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${robotoMono.variable}`}>
-      <body className="min-h-screen bg-white antialiased">
-        {children}
-        <Toaster />
+      <body
+        className="min-h-screen bg-background antialiased"
+        style={{ backgroundColor: '#F4F8FA' }}
+      >
+        <ThemeProvider>
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -1,0 +1,34 @@
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Owl Body -->
+  <ellipse cx="20" cy="25" rx="12" ry="10" fill="#8B4513" stroke="#6B3410" stroke-width="1"/>
+  
+  <!-- Owl Head -->
+  <circle cx="20" cy="15" r="10" fill="#A0522D" stroke="#6B3410" stroke-width="1"/>
+  
+  <!-- Ear Tufts -->
+  <path d="M12 8 L10 4 L14 6 Z" fill="#8B4513"/>
+  <path d="M28 8 L30 4 L26 6 Z" fill="#8B4513"/>
+  
+  <!-- Eyes -->
+  <circle cx="16" cy="13" r="3" fill="#FFFFFF" stroke="#6B3410" stroke-width="0.5"/>
+  <circle cx="24" cy="13" r="3" fill="#FFFFFF" stroke="#6B3410" stroke-width="0.5"/>
+  
+  <!-- Eye pupils -->
+  <circle cx="16" cy="13" r="1.5" fill="#2D1810"/>
+  <circle cx="24" cy="13" r="1.5" fill="#2D1810"/>
+  
+  <!-- Eye highlights -->
+  <circle cx="16.5" cy="12.5" r="0.5" fill="#FFFFFF"/>
+  <circle cx="24.5" cy="12.5" r="0.5" fill="#FFFFFF"/>
+  
+  <!-- Beak -->
+  <path d="M20 16 L18 19 L22 19 Z" fill="#D2691E" stroke="#B8860B" stroke-width="0.5"/>
+  
+  <!-- Wing details -->
+  <ellipse cx="14" cy="22" rx="3" ry="6" fill="#CD853F" opacity="0.7"/>
+  <ellipse cx="26" cy="22" rx="3" ry="6" fill="#CD853F" opacity="0.7"/>
+  
+  <!-- Chest feather pattern -->
+  <ellipse cx="20" cy="20" rx="4" ry="2" fill="#D2B48C" opacity="0.6"/>
+  <ellipse cx="20" cy="24" rx="5" ry="2" fill="#D2B48C" opacity="0.4"/>
+</svg>
